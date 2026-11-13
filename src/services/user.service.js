@@ -1,3 +1,4 @@
+const { update } = require("../controllers/user.controller");
 const { User } = require("../models/index");
 const { Op, where } = require("sequelize");
 module.exports = {
@@ -35,5 +36,20 @@ module.exports = {
   createUser: async (data) => {
     const user = await User.create(data);
     return user;
+  },
+  updateUser: async function (data, id) {
+    const status = await User.update(data, {
+      where: { id },
+    });
+    if (status) {
+      return User.findByPk(id);
+    }
+    return false;
+  },
+  deleteUser: async (id) => {
+    const status = await User.destroy({
+      where: { id },
+    });
+    return status;
   },
 };
