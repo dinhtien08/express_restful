@@ -1,5 +1,5 @@
 const { User } = require("../models/index");
-const { Op } = require("sequelize");
+const { Op, where } = require("sequelize");
 module.exports = {
   getUsers: async ({ _sort, _order, q, _page, _limit }) => {
     const where = {};
@@ -23,10 +23,17 @@ module.exports = {
     });
     return users;
   },
-  getUser: async (id) => {
-    const user = await User.findByPk(id, {
-      attributes: { exclude: "password" },
+  getUser: async (value, type = "id") => {
+    const user = await User.findOne({
+      where: { [type]: value },
+      attributes: {
+        exclude: "password",
+      },
     });
+    return user;
+  },
+  createUser: async (data) => {
+    const user = await User.create(data);
     return user;
   },
 };
