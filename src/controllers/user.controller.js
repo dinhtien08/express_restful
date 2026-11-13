@@ -77,6 +77,7 @@ module.exports = {
       const body = await schema.validate(req.body, {
         abortEarly: false,
       });
+      body.password = hashPassword(body.password);
       const user = await createUser(body);
       return successResponse({
         res,
