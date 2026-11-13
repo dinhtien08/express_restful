@@ -1,6 +1,13 @@
-const { getUsers, getUser, createUser } = require("../services/user.service");
+const {
+  getUsers,
+  getUser,
+  createUser,
+  updateUser,
+  deleteUser,
+} = require("../services/user.service");
 const { successResponse, errorResponse } = require("../utils/response");
 const { object, string } = require("yup");
+const { hashPassword } = require("../utils/hashing");
 module.exports = {
   index: async (req, res) => {
     try {
@@ -93,6 +100,85 @@ module.exports = {
         error: errors ? errors : error.message,
         message,
         status: status || 500,
+      });
+    }
+  },
+  update: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const rules = {};
+      if (req.body.name) {
+        rules.name = string().min(4);
+      }
+      if (req.body.email) {
+        rules.email = string()
+          .email()
+          .test("check-unique", "Email is already in use", async (value) => {
+            const user = await getUser(value, "email");
+            return !user || (user && user.id === +id);
+          });
+      }
+      if (req.body.password) {
+        rules.password = string().min(6);
+        req.body.password = hashPassword(req.body.password);
+      }
+      if (req.body.status) {
+        string().test("check-status", "Invalid status", (value) => {
+          return value === "true" || value === "false";
+        });
+      }
+      const schema = object(rules);
+      const body = await schema.validate(req.body, {
+        abortEarly: false,
+      });
+      const user = await updateUser(body, id);
+      if (!user) {
+        const error = new Error("User not found");
+        error.status = 404;
+        throw error;
+      }
+      return successResponse({
+        res,
+        status: 200,
+        data: user,
+        message: "User updated",
+      });
+    } catch (error) {
+      let errors = null;
+      let status = error.status;
+      let message = "Failed to update user";
+      if (error.inner) {
+        errors = Object.fromEntries(
+          error.inner.map((err) => [err.path, err.message]),
+        );
+        status = 400;
+        message = "Validation failed";
+      }
+      return errorResponse({
+        res,
+        error: errors ? errors : error.message,
+        message,
+        status: status || 500,
+      });
+    }
+  },
+  delete: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const status = await deleteUser(id);
+      if (!status) {
+        throw new Error("Server Error");
+      }
+      return successResponse({
+        res,
+        status: 200,
+        message: "User deleted",
+      });
+    } catch (error) {
+      return errorResponse({
+        res,
+        error: error.message,
+        message,
       });
     }
   },
