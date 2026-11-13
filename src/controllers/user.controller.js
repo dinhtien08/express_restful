@@ -1,6 +1,7 @@
 const { getUsers, getUser, createUser } = require("../services/user.service");
 const { successResponse, errorResponse } = require("../utils/response");
 const { object, string } = require("yup");
+const { hashPassword } = require("../utils/hashing");
 module.exports = {
   index: async (req, res) => {
     try {
@@ -70,6 +71,7 @@ module.exports = {
       const body = await schema.validate(req.body, {
         abortEarly: false,
       });
+      body.password = hashPassword(body.password);
       const user = await createUser(body);
       return successResponse({
         res,
